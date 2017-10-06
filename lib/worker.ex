@@ -14,28 +14,36 @@ defmodule Worker do
         topology == "line" ->
             
             IO.puts "line"
+            
             IO.puts "My neighbors are:"
             # myPid = Integer.parse(k)
-            IO.puts k
-            neighbor1 = k - 1
-            neighbor2 = k + 1
-            IO.puts neighbor1
-            IO.puts neighbor2
+            #IO.puts k
+
             if k > 1 && k < numNodes do
                 #These are the non extreme nodes
+                neighbor1 = k - 1
+                neighbor2 = k + 1
+                IO.puts neighbor1
+                IO.puts neighbor2
                 IO.puts "These are the non extreme nodes"
                 # IO.inspect :global.whereis_name(client)
             else
                 if k < numNodes do
                     # This is the first node
+                    neighbor2 = k+1
+                    IO.puts neighbor2
                     IO.puts "This is the first node"
-                    node_string = Enum.join(["node",:neighbor2])
+                    
+                    node_string = Enum.join(["node","#{neighbor2}"]) #RHS only
                     node_atom = String.to_atom(node_string)
                     IO.inspect :global.whereis_name(node_atom)
                 else
                     # This is the last node
+                    neighbor1 = k-1
+                    IO.puts neighbor1
                     IO.puts "This is the last node"
-                    node_string = Enum.join(["node",:neighbor1])
+                   
+                    node_string = Enum.join(["node","#{neighbor1}"]) #LHS only
                     node_atom = String.to_atom(node_string)
                     IO.inspect :global.whereis_name(node_atom)
                 end
