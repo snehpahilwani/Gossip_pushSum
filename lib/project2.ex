@@ -25,9 +25,9 @@ defmodule Project2 do
 
         node_pid = spawn(Worker, :talktoworkers, [max, numNodes, topology, algorithm])
 
-        IO.inspect node_pid
+        #IO.inspect node_pid
 
-        node_string = Enum.join(["node",:max])
+        node_string = Enum.join(["node",max])
         node_atom = String.to_atom(node_string)
         :global.register_name(node_atom, node_pid)
         :global.sync()
