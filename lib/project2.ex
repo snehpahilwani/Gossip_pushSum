@@ -22,21 +22,24 @@ defmodule Project2 do
 
         nodeMap = createNetwork(totalNodes, totalNodes, topology, algorithm, nodeMap)
         nodeMap = Dict.put_new(nodeMap, :nodeSum, 0)
-        #IO.inspect nodeMap
+        # IO.inspect nodeMap
 
         # Registering main process as server
         :global.register_name(:server, self())
         :global.sync()
 
-        # Sending rumour to the first node
-        send(:global.whereis_name(:node1),{:rumour})
+        
         cond do
             algorithm == "gossip" ->
                 #gossip(framedTopology)
+                # Sending rumour to the first node
                 send(:global.whereis_name(:node1),{:rumour})
             algorithm == "push-sum" ->
                 #push sum
-                send(:global.whereis_name(:node1),{0, 0})
+                # 
+                node_string = Enum.join(["node",round(totalNodes/2)])
+                node_atom = String.to_atom(node_string) 
+                send(:global.whereis_name(:"#{node_atom}"),{0, 0})
             true ->
                 IO.puts "invalid algo option"
                 System.halt(0)
@@ -44,14 +47,14 @@ defmodule Project2 do
 
         # Waiting for rumour received updates from workers
         updateNetworkMap(nodeMap, totalNodes)
-        # Process.sleep(:infinity)
+        Process.sleep(2000)
     end
 
     def updateNetworkMap(nodeMap, totalNodes) do
         
         receive do
             {:receivedRumour,k} ->
-                IO.puts "Updating status for #{k}th node"
+                # IO.puts "Updating status for #{k}th node"
                 node_string = Enum.join(["node",k])
                 node_atom = String.to_atom(node_string) 
                 if nodeMap[:"#{node_atom}"] == 0 do
@@ -60,7 +63,7 @@ defmodule Project2 do
                 end
         end
 
-        IO.inspect nodeMap
+        # IO.inspect nodeMap
         if nodeMap[:nodeSum] >= totalNodes do
             IO.puts "Convergence software version 7.0"
         else

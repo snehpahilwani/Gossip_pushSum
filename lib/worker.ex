@@ -74,18 +74,26 @@ defmodule Worker do
             System.halt(0)
     end
     
-    Process.sleep(:infinity)
+    # Process.sleep(:infinity)
     end 
 
     def findAliveNeighbor(selectedList) do
-        selectedNeighbor = Enum.random(selectedList)
-        node_string = Enum.join(["node","#{selectedNeighbor}"])
-        node_atom = String.to_atom(node_string)
-    
-        if Process.alive?(:global.whereis_name(node_atom)) do
-            node_atom
+        if Enum.empty?(selectedList) do
+            IO.puts "Empty list"
+            node_atom = :undefined
         else
-            findAliveNeighbor(selectedList -- [selectedNeighbor])
+            selectedNeighbor = Enum.random(selectedList)
+            # IO.puts "findAlive #{selectedNeighbor}"
+            node_string = Enum.join(["node","#{selectedNeighbor}"])
+            node_atom = String.to_atom(node_string)
+        
+            #if Process.alive?(:global.whereis_name(node_atom)) do
+            #    node_atom
+            if :global.whereis_name(node_atom) != :undefined do
+                 node_atom
+            else
+                findAliveNeighbor(selectedList -- [selectedNeighbor])
+            end
         end
     end
 
@@ -98,40 +106,53 @@ defmodule Worker do
             send(server,{:receivedRumour,k})
             # System.halt(0)
         else
-            IO.puts "Rumour receved at #{k}th node"
+            # IO.puts "Rumour receved at #{k}th node"
             new_s = old_s + s
             new_w = old_w + w
 
+            new_ratio = new_s / new_w
+            old_ratio = old_s / old_w
+            diff = Kernel.abs(old_ratio - new_ratio)
+            
+
             #select random neighbors from possible neighbors and send them new_s/2 and new_w/2
-            
-            
             # check if selected neighbor is alive. If not choose a different neighbor from the list.
 
             node_atom = findAliveNeighbor(selectedList)
-            send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
-
-            
-            receive do
-                {s, w} ->
-                    # Convergence check
-                    new_ratio = new_s / new_w
-                    old_ratio = old_s / old_w
-                    diff = Kernel.abs(old_ratio - new_ratio)
+            if node_atom == :undefined do
+                IO.inspect new_ratio
+                server = :global.whereis_name(:server)
+                send(server,{:receivedRumour,k})
+                # IO.puts "Node #{k} converging"
+                
+                # IO.inspect diff
+            else
+                send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
+                # Convergence check
+                
+                if(diff > 0 && diff < 0.0000000001 && convCount == 1) do
                     IO.inspect new_ratio
-                    IO.inspect old_ratio
-                    IO.inspect diff
-                    if(diff < 0.0000000001) do
-                        pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, s, w)
-                    else
-                        pushSumConvergence(3, k, new_s/2, new_w/2, selectedList, s, w)
-                    end
-                after 0_500 ->
-                    node_atom = findAliveNeighbor(selectedList)
-                    send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
-
-                    pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, 0, 0)
-            end
+                    pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, s, w)
+                    
+                    # IO.inspect diff
+                    # IO.puts "Node #{k} converging"
+                end
             
+                
+                receive do
+                    {s, w} ->
+                        if(diff > 0 && diff < 0.0000000001) do
+                            pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, s, w)
+                        else
+                            pushSumConvergence(3, k, new_s/2, new_w/2, selectedList, s, w)
+                        end
+                        
+                    after 0_200 ->
+                        # node_atom = findAliveNeighbor(selectedList)
+                        # send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
+                        pushSumConvergence(convCount, k, new_s/2, new_w/2, selectedList, 0, 0)
+                end
+            end
         end
     end
 
@@ -150,7 +171,7 @@ defmodule Worker do
                 {:rumour} ->
                     IO.puts "Rumour receved at #{k}th node"
                     listenTillTermination(max-1, k, selectedList)
-                after 0_500 ->
+                after 1_500 ->
                     listenTillTermination(max, k, selectedList)
             end
             
