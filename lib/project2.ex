@@ -12,7 +12,14 @@ defmodule Project2 do
             System.halt(0)
         end
         nodeMap = %{}
-        totalNodes = nearestSquare(numNodes)
+        
+
+        if topology == "2D" || topology == "imp2D" do
+            totalNodes = nearestSquare(numNodes)
+        else
+            totalNodes = numNodes
+        end
+
         nodeMap = createNetwork(totalNodes, totalNodes, topology, algorithm, nodeMap)
         nodeMap = Dict.put_new(nodeMap, :nodeSum, 0)
         #IO.inspect nodeMap
@@ -22,8 +29,18 @@ defmodule Project2 do
         :global.sync()
 
         # Sending rumour to the first node
-        #IO.inspect nodeMap[:node1]
         send(:global.whereis_name(:node1),{:rumour})
+        cond do
+            algorithm == "gossip" ->
+                #gossip(framedTopology)
+                send(:global.whereis_name(:node1),{:rumour})
+            algorithm == "push-sum" ->
+                #push sum
+                send(:global.whereis_name(:node1),{0, 0})
+            true ->
+                IO.puts "invalid algo option"
+                System.halt(0)
+        end
 
         # Waiting for rumour received updates from workers
         updateNetworkMap(nodeMap, totalNodes)
@@ -41,9 +58,8 @@ defmodule Project2 do
                     nodeMap = %{nodeMap | "#{node_atom}": 1}
                     nodeMap = %{nodeMap | nodeSum: nodeMap[:nodeSum] + 1}
                 end
-
         end
-        
+
         IO.inspect nodeMap
         if nodeMap[:nodeSum] >= totalNodes do
             IO.puts "Convergence software version 7.0"
@@ -87,14 +103,3 @@ end
 
 
 
-# cond do
-#     algorithm == "gossip" ->
-#         #gossip(framedTopology)
-#         IO.puts "gossip"
-#     algorithm == "push-sum" ->
-#         #pushSum(framedTopology)
-#         System.halt(0)
-#     true ->
-#         IO.puts "invalid algo option"
-#         System.halt(0)
-# end

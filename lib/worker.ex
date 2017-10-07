@@ -2,14 +2,6 @@ defmodule Worker do
 
   def talktoworkers(k, numNodes, topology, algorithm) do
     IO.puts "wrkr at #{k}th node started"
-    receive do
-        {:rumour} ->
-            IO.puts "Rumour receved at #{k}th node"
-            #Reporting server that rumor received
-            server = :global.whereis_name(:server)
-            send(server,{:receivedRumour,k})
-    end
-
     selectedList = []
     cond do
         topology == "full" ->
@@ -46,7 +38,7 @@ defmodule Worker do
 
         topology == "imp2D" ->
             selectedList = set2DTopology(k,numNodes)
-            selectedList = selectedList ++ setFullTopology(numNodes)
+            selectedList = selectedList ++ [Enum.random(setFullTopology(numNodes))]
             IO.inspect selectedList
             IO.puts "imp2D"
         true ->
@@ -54,18 +46,99 @@ defmodule Worker do
             System.halt(0)
     end
     
-    listenTillTermination(9, k, selectedList)
+    
+
+    cond do
+        algorithm == "gossip" ->
+            #gossip(framedTopology)
+            receive do
+                {:rumour} ->
+                    IO.puts "Rumour receved at #{k}th node"
+                    #Reporting server that rumor received
+                    server = :global.whereis_name(:server)
+                    send(server,{:receivedRumour,k})
+                    # Heard the rumor 1 time, needs to hear 9 more times for termination.
+                    listenTillTermination(9, k, selectedList)
+            end
+        algorithm == "push-sum" ->
+            #push sum
+            receive do
+                {s, w} ->
+                    IO.puts "Value receved at #{k}th node"
+                    #Value received at at #{k}th node"
+                    pushSumConvergence(3,k, k, 1, selectedList, s, w)
+
+            end
+        true ->
+            IO.puts "invalid algo option"
+            System.halt(0)
+    end
+    
     Process.sleep(:infinity)
     end 
 
-    def listenTillTermination(max, k, selectedList) do
-        # IO.inspect selectedList
+    def findAliveNeighbor(selectedList) do
         selectedNeighbor = Enum.random(selectedList)
         node_string = Enum.join(["node","#{selectedNeighbor}"])
-        # IO.puts node_string
         node_atom = String.to_atom(node_string)
-        # IO.inspect node_atom
-        # IO.inspect :global.whereis_name(node_atom)
+    
+        if Process.alive?(:global.whereis_name(node_atom)) do
+            node_atom
+        else
+            findAliveNeighbor(selectedList -- [selectedNeighbor])
+        end
+    end
+
+
+    
+
+    def pushSumConvergence(convCount, k, old_s, old_w, selectedList, s, w) do
+        if convCount < 1 do
+            server = :global.whereis_name(:server)
+            send(server,{:receivedRumour,k})
+            # System.halt(0)
+        else
+            IO.puts "Rumour receved at #{k}th node"
+            new_s = old_s + s
+            new_w = old_w + w
+
+            #select random neighbors from possible neighbors and send them new_s/2 and new_w/2
+            
+            
+            # check if selected neighbor is alive. If not choose a different neighbor from the list.
+
+            node_atom = findAliveNeighbor(selectedList)
+            send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
+
+            
+            receive do
+                {s, w} ->
+                    # Convergence check
+                    new_ratio = new_s / new_w
+                    old_ratio = old_s / old_w
+                    diff = Kernel.abs(old_ratio - new_ratio)
+                    IO.inspect new_ratio
+                    IO.inspect old_ratio
+                    IO.inspect diff
+                    if(diff < 0.0000000001) do
+                        pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, s, w)
+                    else
+                        pushSumConvergence(3, k, new_s/2, new_w/2, selectedList, s, w)
+                    end
+                after 0_500 ->
+                    node_atom = findAliveNeighbor(selectedList)
+                    send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
+
+                    pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, 0, 0)
+            end
+            
+        end
+    end
+
+    def listenTillTermination(max, k, selectedList) do
+        selectedNeighbor = Enum.random(selectedList)
+        node_string = Enum.join(["node","#{selectedNeighbor}"])
+        node_atom = String.to_atom(node_string)
     
         send(:global.whereis_name(node_atom),{:rumour})
 
