@@ -1,8 +1,14 @@
 defmodule Worker do
 
   def talktoworkers(k, numNodes, topology, algorithm) do
-    IO.puts "wrkr"
-
+    IO.puts "wrkr at #{k}th node started"
+    receive do
+        {:rumour} ->
+            IO.puts "Rumour receved at #{k}th node"
+            #Reporting server that rumor received
+            server = :global.whereis_name(:server)
+            send(server,{:receivedRumour,k})
+    end
 
     cond do
         topology == "full" ->
@@ -13,9 +19,9 @@ defmodule Worker do
             IO.puts "2d"
         topology == "line" ->
             
-            IO.puts "line"
+            # IO.puts "line"
             
-            IO.puts "My neighbors are:"
+            # IO.puts "My neighbors are:"
             # myPid = Integer.parse(k)
             #IO.puts k
 
@@ -25,27 +31,29 @@ defmodule Worker do
                 neighbor2 = k + 1
                 IO.puts neighbor1
                 IO.puts neighbor2
-                IO.puts "These are the non extreme nodes"
+                # IO.puts "These are the non extreme nodes"
                 # IO.inspect :global.whereis_name(client)
             else
                 if k < numNodes do
                     # This is the first node
                     neighbor2 = k+1
-                    IO.puts neighbor2
-                    IO.puts "This is the first node"
+                    # IO.puts neighbor2
+                    # IO.puts "This is the first node"
                     
                     node_string = Enum.join(["node","#{neighbor2}"]) #RHS only
                     node_atom = String.to_atom(node_string)
-                    IO.inspect :global.whereis_name(node_atom)
+                    # IO.puts node_atom
+                    # IO.inspect :global.whereis_name(node_atom)
                 else
                     # This is the last node
                     neighbor1 = k-1
-                    IO.puts neighbor1
-                    IO.puts "This is the last node"
+                    # IO.puts neighbor1
+                    # IO.puts "This is the last node"
                    
                     node_string = Enum.join(["node","#{neighbor1}"]) #LHS only
                     node_atom = String.to_atom(node_string)
-                    IO.inspect :global.whereis_name(node_atom)
+                    # IO.puts node_atom
+                    # IO.inspect :global.whereis_name(node_atom)
                 end
                 
             end
@@ -59,10 +67,7 @@ defmodule Worker do
     end
 
     
-        # receive do
-        #     msg ->
-        #         IO.puts "Bitcoin from worker : "
-        # end
-    end 
+        
+  end 
 
 end
