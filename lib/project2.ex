@@ -12,7 +12,9 @@ defmodule Project2 do
             System.halt(0)
         end
         nodeMap = %{}
-        nodeMap = createNetwork(numNodes, numNodes, topology, algorithm, nodeMap)
+        totalNodes = nearestSquare(numNodes)
+        nodeMap = createNetwork(totalNodes, totalNodes, topology, algorithm, nodeMap)
+        nodeMap = Dict.put_new(nodeMap, :nodeSum, 0)
         #IO.inspect nodeMap
 
         # Registering main process as server
@@ -24,26 +26,37 @@ defmodule Project2 do
         send(:global.whereis_name(:node1),{:rumour})
 
         # Waiting for rumour received updates from workers
-        updateNetworkMap(nodeMap)
-        Process.sleep(:infinity)
+        updateNetworkMap(nodeMap, totalNodes)
+        # Process.sleep(:infinity)
     end
 
-    def updateNetworkMap(nodeMap) do
+    def updateNetworkMap(nodeMap, totalNodes) do
+        
         receive do
             {:receivedRumour,k} ->
                 IO.puts "Updating status for #{k}th node"
                 node_string = Enum.join(["node",k])
                 node_atom = String.to_atom(node_string) 
-                nodeMap = %{nodeMap | "#{node_atom}": 1}
+                if nodeMap[:"#{node_atom}"] == 0 do
+                    nodeMap = %{nodeMap | "#{node_atom}": 1}
+                    nodeMap = %{nodeMap | nodeSum: nodeMap[:nodeSum] + 1}
+                end
+
         end
+        
         IO.inspect nodeMap
+        if nodeMap[:nodeSum] >= totalNodes do
+            IO.puts "Convergence software version 7.0"
+        else
+            updateNetworkMap(nodeMap, totalNodes)
+        end
 
         # See if the network has converged, i.e. all nodes have received rumor
+        # Enum.map_reduce(nodeMap, 0, fn(x, acc) -> {x, x + acc} end)
 
         #Keep looking out for more updates from workers
-        updateNetworkMap(nodeMap)
+        
     end
-
 
     def createNetwork(max, numNodes, topology, algorithm, nodeMap) do
         if max<1 do
@@ -65,6 +78,10 @@ defmodule Project2 do
             createNetwork(max-1, numNodes, topology, algorithm, nodeMap)
         end
     end 
+
+    def nearestSquare(num) do
+        round(:math.pow(Float.ceil(:math.sqrt(num)),2))
+    end
 end
 
 
