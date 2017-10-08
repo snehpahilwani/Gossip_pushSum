@@ -74,6 +74,9 @@ defmodule Worker do
             System.halt(0)
     end
     
+    if(algorithm == "gossip") do
+        Process.sleep(:infinity)
+    end
     # Process.sleep(:infinity)
     end 
 

@@ -20,6 +20,7 @@ defmodule Project2 do
             totalNodes = numNodes
         end
      # time count start
+        time_1 = System.system_time(:millisecond)
         nodeMap = createNetwork(totalNodes, totalNodes, topology, algorithm, nodeMap)
         
 
@@ -31,7 +32,7 @@ defmodule Project2 do
         :global.sync()
 
      # topology time finished
-
+        time_2 = System.system_time(:millisecond)
     # algorithm time start
         cond do
             algorithm == "gossip" ->
@@ -53,8 +54,14 @@ defmodule Project2 do
         updateNetworkMap(nodeMap, totalNodes)
 
     # time network converges.
-    
-        Process.sleep(2000)
+        time_3 = System.system_time(:millisecond)
+        IO.puts(Enum.join(["Topology creation time(in milliseconds): ",time_2 - time_1]))
+        IO.puts(Enum.join(["Protocol running time(in milliseconds): ",time_3 - time_2]))
+        if(algorithm == "gossip") do
+            Process.sleep(:infinity)
+        else
+            Process.sleep(2000)
+        end
     end
 
     def updateNetworkMap(nodeMap, totalNodes) do
