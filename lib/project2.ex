@@ -19,8 +19,10 @@ defmodule Project2 do
         else
             totalNodes = numNodes
         end
-
+     # time count start
         nodeMap = createNetwork(totalNodes, totalNodes, topology, algorithm, nodeMap)
+        
+
         nodeMap = Dict.put_new(nodeMap, :nodeSum, 0)
         # IO.inspect nodeMap
 
@@ -28,7 +30,9 @@ defmodule Project2 do
         :global.register_name(:server, self())
         :global.sync()
 
-        
+     # topology time finished
+
+    # algorithm time start
         cond do
             algorithm == "gossip" ->
                 #gossip(framedTopology)
@@ -47,6 +51,9 @@ defmodule Project2 do
 
         # Waiting for rumour received updates from workers
         updateNetworkMap(nodeMap, totalNodes)
+
+    # time network converges.
+    
         Process.sleep(2000)
     end
 
