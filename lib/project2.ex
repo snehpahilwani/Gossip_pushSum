@@ -57,11 +57,8 @@ defmodule Project2 do
         time_3 = System.system_time(:millisecond)
         IO.puts(Enum.join(["Topology creation time(in milliseconds): ",time_2 - time_1]))
         IO.puts(Enum.join(["Protocol running time(in milliseconds): ",time_3 - time_2]))
-        if(algorithm == "gossip") do
-            Process.sleep(:infinity)
-        else
-            Process.sleep(2000)
-        end
+        
+        Process.sleep(2000)
     end
 
     def updateNetworkMap(nodeMap, totalNodes) do
