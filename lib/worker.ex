@@ -74,9 +74,9 @@ defmodule Worker do
             System.halt(0)
     end
     
-    if(algorithm == "gossip") do
-        Process.sleep(:infinity)
-    end
+    # if(algorithm == "gossip") do
+    #     Process.sleep(:infinity)
+    # end
     # Process.sleep(:infinity)
     end 
 
@@ -160,25 +160,26 @@ defmodule Worker do
     end
 
     def listenTillTermination(max, k, selectedList) do
-        selectedNeighbor = Enum.random(selectedList)
-        node_string = Enum.join(["node","#{selectedNeighbor}"])
-        node_atom = String.to_atom(node_string)
-    
-        send(:global.whereis_name(node_atom),{:rumour})
-
-
-        if max<1 do
+         node_atom = findAliveNeighbor(selectedList)
+        if node_atom == :undefined do
             IO.puts "Terminating #{k}th node"
         else
-            receive do
-                {:rumour} ->
-                    IO.puts "Rumour receved at #{k}th node"
-                    listenTillTermination(max-1, k, selectedList)
-                after 1_500 ->
-                    listenTillTermination(max, k, selectedList)
+            send(:global.whereis_name(node_atom),{:rumour})
+            if max<1 do
+                IO.puts "Terminating #{k}th node"
+            else
+                receive do
+                    {:rumour} ->
+                        IO.puts "Rumour receved at #{k}th node"
+                        listenTillTermination(max-1, k, selectedList)
+                    after 0_500 ->
+                        listenTillTermination(max, k, selectedList)
+                end
+                
             end
-            
         end
+
+        
     end
 
     def nearestSquare(num) do
