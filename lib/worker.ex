@@ -162,7 +162,41 @@ defmodule Worker do
         node_atom = String.to_atom(node_string)
     
         send(:global.whereis_name(node_atom),{:rumour})
-
+         node_atom = findAliveNeighbor(selectedList)
+            if node_atom == :undefined do
+                IO.inspect new_ratio
+                server = :global.whereis_name(:server)
+                send(server,{:receivedRumour,k})
+                # IO.puts "Node #{k} converging"
+                
+                # IO.inspect diff
+            else
+                send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
+                # Convergence check
+                
+                if(diff > 0 && diff < 0.0000000001 && convCount == 1) do
+                    IO.inspect new_ratio
+                    pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, s, w)
+                    
+                    # IO.inspect diff
+                    # IO.puts "Node #{k} converging"
+                end
+            
+                
+                receive do
+                    {s, w} ->
+                        if(diff > 0 && diff < 0.0000000001) do
+                            pushSumConvergence(convCount-1, k, new_s/2, new_w/2, selectedList, s, w)
+                        else
+                            pushSumConvergence(3, k, new_s/2, new_w/2, selectedList, s, w)
+                        end
+                        
+                    after 0_200 ->
+                        # node_atom = findAliveNeighbor(selectedList)
+                        # send(:global.whereis_name(node_atom),{new_s/2, new_w/2})
+                        pushSumConvergence(convCount, k, new_s/2, new_w/2, selectedList, 0, 0)
+                end
+            end
 
         if max<1 do
             IO.puts "Terminating #{k}th node"
