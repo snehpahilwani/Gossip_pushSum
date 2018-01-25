@@ -1,6 +1,8 @@
 # Project2
 
-**TODO: Add description**
+• Implemented Asynchronous Gossip Algorithm for group communication and Push-Sum algorithm for aggregate computation on different simulated network topologies (Full, Line, 2D Grid, Imperfect Grid) and determined the convergence of these algorithms. </br>
+• Simulated upto 8000 nodes (Actors) in the network. </br>
+• Technology used: Elixir
 
 ## Installation
 
